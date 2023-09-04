@@ -81,7 +81,6 @@ public class User {
     private String phone;
 
     @Column(name = "status")
-    @DefaultValue("A")
     private char status;
 
     @ManyToMany(fetch = FetchType.EAGER)

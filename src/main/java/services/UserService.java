@@ -6,7 +6,9 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import customResponse.CustomResponse;
+import models.Role;
 import models.User;
+import repositories.RoleRepository;
 import repositories.UserRepository;
 
 @ApplicationScoped
@@ -16,6 +18,8 @@ public class UserService {
 
     @Inject
     private UserRepository userRepository;
+    @Inject
+    private RoleRepository roleRepository;
 
     public Response getAll() {
         if (userRepository.findAll().count() == 0) {
@@ -51,14 +55,24 @@ public class UserService {
             if (response != null) {
                 return response;
             }
+            Role roleDefault = roleRepository.findByName("user");
+            if (roleDefault == null) {
+                customRes = new CustomResponse("El rol por defecto no se encontró en la base de datos.", 500);
+                return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                        .entity(customRes)
+                        .build();
+            }
+            user.getRoles().add(roleDefault);
+            user.setStatus('A');
             userRepository.persist(user);
             return Response
                     .status(Response.Status.CREATED)
                     .entity(user)
                     .build();
         } catch (Exception e) {
+            customRes = new CustomResponse(e.getMessage(), 500);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity(e.getMessage())
+                    .entity(customRes)
                     .build();
         }
     }
@@ -127,11 +141,11 @@ public class UserService {
         if (user.getRoles() != null) {
             user.getRoles().size();
         }
-        
+
     }
 
-    //Validar campos unicos
-    private Response validateUniqueConstraints(User user){
+    // Validar campos unicos
+    private Response validateUniqueConstraints(User user) {
         if (userRepository.findByIdentity(user.getIdentity()) != null) {
             customRes = new CustomResponse("Ya existe un usuario con identidad: " + user.getIdentity(), 400);
             return Response.status(Response.Status.BAD_REQUEST)
